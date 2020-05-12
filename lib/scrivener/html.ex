@@ -1,43 +1,59 @@
 defmodule Scrivener.HTML do
   use Phoenix.HTML
-  @defaults [view_style: :bootstrap, action: :index, page_param: :page, hide_single: false]
+
+  @defaults [
+    view_style: :bootstrap,
+    action: :index,
+    page_param: :page,
+    hide_single: false
+  ]
+
   @view_styles [:bootstrap, :semantic, :foundation, :bootstrap_v4, :materialize, :bulma]
+
   @raw_defaults [
     distance: 5,
-    next: ">>",
     previous: "<<",
+    next: ">>",
     first: true,
     last: true,
     ellipsis: raw("&hellip;")
   ]
+
   @moduledoc """
-  For use with Phoenix.HTML, configure the `:routes_helper` module like the following:
+  ## Usage
+
+  Import `Scrivener.HTML` to your view:
+
+      defmodule SampleWeb.UserView do
+        use SampleWeb, :view
+        use Scrivener.HTML
+      end
+
+  Use helper functions in your template:
+
+      <%= pagination_links @conn, @page %>
+
+  Where `@page` is a `%Scrivener.Page{}` struct.
+
+  ## Default values
+
+  Below are the defaults.
+
+      <%= pagination_links @conn, @page, distance: 5, next: ">>", previous: "<<", first: true, last: true %>
+
+  For use with Phoenix.HTML, configure the `:routes_helper` option:
 
       config :scrivener_html,
         routes_helper: MyApp.Router.Helpers
 
-  Import to you view.
 
-      defmodule MyApp.UserView do
-        use MyApp.Web, :view
-        use Scrivener.HTML
-      end
+  ## Custom HTML output
 
-  Use in your template.
+  See `Scrivener.HTML.raw_pagination_links/2` for more details.
 
-      <%= pagination_links @conn, @page %>
+  ## SEO
 
-  Where `@page` is a `%Scrivener.Page{}` struct returned from `Repo.paginate/2`.
-
-  Customize output. Below are the defaults.
-
-      <%= pagination_links @conn, @page, distance: 5, next: ">>", previous: "<<", first: true, last: true %>
-
-  See `Scrivener.HTML.raw_pagination_links/2` for option descriptions.
-
-  For custom HTML output, see `Scrivener.HTML.raw_pagination_links/2`.
-
-  For SEO related functions, see `Scrivener.HTML.SEO` (these are automatically imported).
+  See `Scrivener.HTML.SEO` for more details.
   """
 
   @doc false
@@ -49,7 +65,7 @@ defmodule Scrivener.HTML do
   end
 
   defmodule Default do
-    @doc ~S"""
+    @doc """
     Default path function when none provided. Used when automatic path function
     resolution cannot be performed.
 
@@ -61,23 +77,18 @@ defmodule Scrivener.HTML do
     end
   end
 
-  @doc ~S"""
+  @doc """
   Generates the HTML pagination links for a given paginator returned by Scrivener.
 
   The default options are:
 
-      #{inspect @defaults}
-
-  The `view_style` indicates which CSS framework you are using. The default is
-  `:bootstrap`, but you can add your own using the `Scrivener.HTML.raw_pagination_links/2` function
-  if desired. The full list of available `view_style`s is here:
-
-      #{inspect @view_styles}
+  ```
+  #{inspect(@defaults ++ @raw_defaults, pretty: true)}
+  ```
 
   An example of the output data:
 
       iex> Scrivener.HTML.pagination_links(%Scrivener.Page{total_pages: 10, page_number: 5}) |> Phoenix.HTML.safe_to_string()
-      "<nav><ul class=\"pagination\"><li class=\"\"><a class=\"\" href=\"?page=4\" rel=\"prev\">&lt;&lt;</a></li><li class=\"\"><a class=\"\" href=\"?\" rel=\"canonical\">1</a></li><li class=\"\"><a class=\"\" href=\"?page=2\" rel=\"canonical\">2</a></li><li class=\"\"><a class=\"\" href=\"?page=3\" rel=\"canonical\">3</a></li><li class=\"\"><a class=\"\" href=\"?page=4\" rel=\"prev\">4</a></li><li class=\"active\"><a class=\"\">5</a></li><li class=\"\"><a class=\"\" href=\"?page=6\" rel=\"next\">6</a></li><li class=\"\"><a class=\"\" href=\"?page=7\" rel=\"canonical\">7</a></li><li class=\"\"><a class=\"\" href=\"?page=8\" rel=\"canonical\">8</a></li><li class=\"\"><a class=\"\" href=\"?page=9\" rel=\"canonical\">9</a></li><li class=\"\"><a class=\"\" href=\"?page=10\" rel=\"canonical\">10</a></li><li class=\"\"><a class=\"\" href=\"?page=6\" rel=\"next\">&gt;&gt;</a></li></ul></nav>"
 
   In order to generate links with nested objects (such as a list of comments for a given post)
   it is necessary to pass those arguments. All arguments in the `args` parameter will be directly
@@ -103,7 +114,8 @@ defmodule Scrivener.HTML do
   """
   def pagination_links(conn, paginator, args, opts) do
     opts =
-      Keyword.merge(opts,
+      opts
+      |> Keyword.merge(
         view_style:
           opts[:view_style] || Application.get_env(:scrivener_html, :view_style, :bootstrap)
       )
@@ -120,7 +132,7 @@ defmodule Scrivener.HTML do
     hide_single_result = opts[:hide_single] && paginator.total_pages < 2
 
     if hide_single_result do
-      Phoenix.HTML.raw(nil)
+      raw(nil)
     else
       # Ensure ordering so pattern matching is reliable
       _pagination_links(paginator,
@@ -152,6 +164,22 @@ defmodule Scrivener.HTML do
   def find_path_fn([], _path_args), do: fn _, _, _ -> nil end
   # Define a different version of `find_path_fn` whenever Phoenix is available.
   if Code.ensure_loaded(Phoenix.Naming) do
+    defp add_first(list, page, distance, true) when page - distance > 1 do
+      [1 | list]
+    end
+
+    defp add_first(list, page, distance, first) when page - distance > 1 and first != false do
+      [:first | list]
+    end
+
+    defp add_first(list, _page, _distance, _included) do
+      list
+    end
+
+    defp add_last(list, page, total, distance, true) when page + distance < total do
+      list ++ [total]
+    end
+
     def find_path_fn(entries, path_args) do
       routes_helper_module =
         Application.get_env(:scrivener_html, :routes_helper) ||
@@ -450,63 +478,104 @@ defmodule Scrivener.HTML do
   defp blank_link_tag(_), do: :a
 
   @doc """
-  Returns the raw data in order to generate the proper HTML for pagination links. Data
-  is returned in a `{text, page_number}` format where `text` is intended to be the text
-  of the link and `page_number` is the page it should go to. Defaults are already supplied
-  and they are as follows:
+  Returns the raw data in order to generate the proper HTML for pagination links.
 
-      #{inspect(@raw_defaults)}
+  ## Default options
+  Default options are supplied as following:
 
-  `distance` must be a positive non-zero integer or an exception is raised. `next` and `previous` should be
-  strings but can be anything you want as long as it is truthy, falsey values will remove
-  them from the output. `first` and `last` are only booleans, and they just include/remove
-  their respective link from output. An example of the data returned:
+  ```
+  #{inspect(@raw_defaults)}
+  ```
 
-      iex> Scrivener.HTML.raw_pagination_links(%{total_pages: 10, page_number: 5})
-      [{"<<", 4}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}, {9, 9}, {10, 10}, {">>", 6}]
-      iex> Scrivener.HTML.raw_pagination_links(%{total_pages: 20, page_number: 10}, first: ["←"], last: ["→"])
-      [{"<<", 9}, {["←"], 1}, {:ellipsis, {:safe, "&hellip;"}}, {5, 5}, {6, 6},{7, 7}, {8, 8}, {9, 9}, {10, 10}, {11, 11}, {12, 12}, {13, 13}, {14, 14},{15, 15}, {:ellipsis, {:safe, "&hellip;"}}, {["→"], 20}, {">>", 11}]
+  + `distance` declares how many pages are shown. It is a positive integer.
+  + `previous` and `next` declares text for previous and next buttons. Generally,
+  they are string. Falsy values will remove them from output.
+  + `first` and `last` declares whether show first or last page. Genrally, they are
+  boolean values, but they can be strings.
 
-  Simply loop and pattern match over each item and transform it to your custom HTML.
+  ## Return value
+  Return value is a list of tuples. The tuple is in a `{text, page_number}` format
+  where `text` is intended to be the text of the link and `page_number` is the
+  page number it should go to.
+
+  ## Examples
+
+      iex(31)> Scrivener.HTML.raw_pagination_links(%{total_pages: 10, page_number: 5})
+      [
+        {"<<", 4},
+        {1, 1},
+        {2, 2},
+        {3, 3},
+        {4, 4},
+        {5, 5},
+        {6, 6},
+        {7, 7},
+        {8, 8},
+        {9, 9},
+        {10, 10},
+        {">>", 6}
+      ]
+
+      iex> Scrivener.HTML.raw_pagination_links(%{total_pages: 15, page_number: 8}, first: "←", last: "→")
+      [
+        {"<<", 7},
+        {"←", 1},
+        {:ellipsis, {:safe, "&hellip;"}},
+        {3, 3},
+        {4, 4},
+        {5, 5},
+        {6, 6},
+        {7, 7},
+        {8, 8},
+        {9, 9},
+        {10, 10},
+        {11, 11},
+        {12, 12},
+        {13, 13},
+        {:ellipsis, {:safe, "&hellip;"}},
+        {"→", 15},
+        {">>", 9}
+      ]
+
+  Simply loop and pattern match over each item and transform them to your custom HTML.
   """
   def raw_pagination_links(paginator, options \\ []) do
+    %{page_number: page_number, total_pages: total_pages} = paginator
+
     options = Keyword.merge(@raw_defaults, options)
+    opt_distance = options[:distance]
+    opt_previous = options[:previous]
+    opt_next = options[:next]
+    opt_first = options[:first]
+    opt_last = options[:last]
+    opt_ellipsis = options[:ellipsis]
 
-    add_first(paginator.page_number, options[:distance], options[:first])
-    |> add_first_ellipsis(
-      paginator.page_number,
-      paginator.total_pages,
-      options[:distance],
-      options[:first]
-    )
-    |> add_previous(paginator.page_number)
-    |> page_number_list(paginator.page_number, paginator.total_pages, options[:distance])
-    |> add_last_ellipsis(
-      paginator.page_number,
-      paginator.total_pages,
-      options[:distance],
-      options[:last]
-    )
-    |> add_last(paginator.page_number, paginator.total_pages, options[:distance], options[:last])
-    |> add_next(paginator.page_number, paginator.total_pages)
+    []
+    |> add_first(page_number, opt_distance, opt_first)
+    |> add_first_ellipsis(page_number, total_pages, opt_distance, opt_first)
+    |> add_previous(page_number)
+    |> page_number_list(page_number, total_pages, opt_distance)
+    |> add_last_ellipsis(page_number, total_pages, opt_distance, opt_last)
+    |> add_last(page_number, total_pages, opt_distance, opt_last)
+    |> add_next(page_number, total_pages)
     |> Enum.map(fn
-      :next ->
-        if options[:next], do: {options[:next], paginator.page_number + 1}
-
       :previous ->
-        if options[:previous], do: {options[:previous], paginator.page_number - 1}
+        if opt_previous, do: {opt_previous, page_number - 1}
+
+      :next ->
+        if opt_next, do: {opt_next, page_number + 1}
 
       :first_ellipsis ->
-        if options[:ellipsis] && options[:first], do: {:ellipsis, options[:ellipsis]}
+        if opt_ellipsis && opt_first, do: {:ellipsis, opt_ellipsis}
 
       :last_ellipsis ->
-        if options[:ellipsis] && options[:last], do: {:ellipsis, options[:ellipsis]}
+        if opt_ellipsis && opt_last, do: {:ellipsis, opt_ellipsis}
 
       :first ->
-        if options[:first], do: {options[:first], 1}
+        if opt_first, do: {opt_first, 1}
 
       :last ->
-        if options[:last], do: {options[:last], paginator.total_pages}
+        if opt_last, do: {opt_last, total_pages}
 
       num when is_number(num) ->
         {num, num}
@@ -566,16 +635,16 @@ defmodule Scrivener.HTML do
     list
   end
 
-  defp add_first(page, distance, true) when page - distance > 1 do
-    [1]
+  defp add_first(list, page, distance, true) when page - distance > 1 do
+    [1 | list]
   end
 
-  defp add_first(page, distance, first) when page - distance > 1 and first != false do
-    [:first]
+  defp add_first(list, page, distance, first) when page - distance > 1 and first != false do
+    [:first | list]
   end
 
-  defp add_first(_page, _distance, _included) do
-    []
+  defp add_first(list, _page, _distance, _included) do
+    list
   end
 
   defp add_last(list, page, total, distance, true) when page + distance < total do

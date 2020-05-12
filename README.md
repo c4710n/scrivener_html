@@ -1,74 +1,24 @@
-# Scrivener.Html [![Build Status](https://semaphoreci.com/api/v1/projects/3b1ad27c-8991-4208-94d0-0bae42108482/638637/badge.svg)](https://semaphoreci.com/mgwidmann/scrivener_html)
+# Scrivener.HTML [![Build Status](https://semaphoreci.com/api/v1/projects/3b1ad27c-8991-4208-94d0-0bae42108482/638637/badge.svg)](https://semaphoreci.com/mgwidmann/scrivener_html)
 
 Helpers built to work with [Scrivener](https://github.com/drewolson/scrivener)'s page struct to easily build HTML output for various CSS frameworks.
 
-## Setup
+## Installation
 
-Add to `mix.exs`
-
-```elixir
-  # add :scrivener_html to deps
-  defp deps do
-    [
-      # ...
-      {:scrivener_html, "~> 1.8"}
-      # ...
-    ]
-  end
-
-  # add :scrivener_html to applications list
-  defp application do
-    [
-      # ...
-      applications: [ ..., :scrivener_html, ... ]
-      # ...
-    ]
-  end
-```
-
-For use with Phoenix.HTML, configure the `:routes_helper` module in `config/config.exs`
-like the following:
+Add `scrivener_html` to your list of dependencies in `mix.exs`:
 
 ```elixir
-config :scrivener_html,
-  routes_helper: MyApp.Router.Helpers,
-  # If you use a single view style everywhere, you can configure it here. See View Styles below for more info.
-  view_style: :bootstrap
-```
-
-Import to your view.
-
-```elixir
-defmodule MyApp.UserView do
-  use MyApp.Web, :view
-  import Scrivener.HTML
+def deps do
+  [
+    {:scrivener_html, "~> 1.8"}
+  ]
 end
 ```
+
+## Docs
+
+Visit [HexDocs](https://hexdocs.pm/scrivener_html).
 
 ## Example Usage
-
-Use in your template.
-
-```elixir
-<%= for user <- @page do %>
-   ...
-<% end %>
-
-<%= pagination_links @page %>
-```
-
-Where `@page` is a `%Scrivener.Page{}` struct returned from `Repo.paginate/2`.
-So the function in your controller is like:
-
-```elixir
-#  params = %{"page" => _page}
-def index(conn, params) do
-  page = MyApp.User
-          # Other query conditions can be done here
-          |> MyApp.Repo.paginate(params)
-  render conn, "index.html", page: page
-end
-```
 
 ### Scopes and URL Parameters
 
@@ -152,52 +102,6 @@ _(this example uses materialize icons)_
 <%= pagination_links @conn, @page, first: ~E(<i class="material-icons">chevron_left</i>), last: ~E(<i class="material-icons">chevron_right</i>) %>
 ```
 
-## View Styles
+## License
 
-There are six view styles currently supported:
-
-- `:bootstrap` (the default) This styles the pagination links in a manner that
-  is expected by Bootstrap 3.x.
-- `:bootstrap_v4` This styles the pagination links in a manner that
-  is expected by Bootstrap 4.x.
-- `:foundation` This styles the pagination links in a manner that is expected
-  by Foundation for Sites 6.x.
-- `:semantic` This styles the pagination links in a manner that is expected by
-  Semantic UI 2.x.
-- `:materialize` This styles the pagination links in a manner that
-  is expected by Materialize css 0.x.
-- `:bulma` This styles the pagination links in a manner that is expected by Bulma 0.4.x, using the `is-centered` as a default.
-
-## Extending
-
-For custom HTML output, see `Scrivener.HTML.raw_pagination_links/2`.
-
-See `Scrivener.HTML.raw_pagination_links/2` for option descriptions.
-
-Scrivener.HTML can be included in your view and then just used with a simple call to `pagination_links/1`.
-
-```elixir
-iex> Scrivener.HTML.pagination_links(%Scrivener.Page{total_pages: 10, page_number: 5}) |> Phoenix.HTML.safe_to_string()
-"<nav>
-  <ul class=\"pagination\">
-    <li class=\"\"><a class=\"\" href=\"?page=4\">&lt;&lt;</a></li>
-    <li class=\"\"><a class=\"\" href=\"?page=1\">1</a></li>
-    <li class=\"\"><a class=\"\" href=\"?page=2\">2</a></li>
-    <li class=\"\"><a class=\"\" href=\"?page=3\">3</a></li>
-    <li class=\"\"><a class=\"\" href=\"?page=4\">4</a></li>
-    <li class=\"active\"><a class=\"\" href=\"?page=5\">5</a></li>
-    <li class=\"\"><a class=\"\" href=\"?page=6\">6</a></li>
-    <li class=\"\"><a class=\"\" href=\"?page=7\">7</a></li>
-    <li class=\"\"><a class=\"\" href=\"?page=8\">8</a></li>
-    <li class=\"\"><a class=\"\" href=\"?page=9\">9</a></li>
-    <li class=\"\"><a class=\"\" href=\"?page=10\">10</a></li>
-    <li class=\"\"><a class=\"\" href=\"?page=6\">&gt;&gt;</a></li>
-  </ul>
-</nav>"
-```
-
-## SEO
-
-SEO attributes like `rel` are automatically added to pagination links. In addition, a helper for header `<link>` tags is available (`v1.7.0` and higher) to be placed in the `<head>` tag.
-
-See `Scrivener.HTML.SEO` documentation for more information.
+MIT
