@@ -51,7 +51,7 @@ defmodule Scrivener.HTML.MixProject do
   end
 
   defp aliases do
-    [publish: ["hex.publish", "hex.publish docs", "tag"], tag: &tag_release/1]
+    [publish: ["hex.publish", "tag"], tag: &tag_release/1]
   end
 
   defp tag_release(_) do
