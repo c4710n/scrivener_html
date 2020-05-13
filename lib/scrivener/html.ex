@@ -77,8 +77,14 @@ defmodule Scrivener.HTML do
 
   ## Custom HTML output
 
-  Create a render module with referencing `Scrivener.HTML.Render.Preset`, then
-  use it by setting `:render_module` option.
+  ### Custom previous and next buttons
+
+      iex> pagination(%Scrivener.Page{total_pages: 10, page_number: 5}, previous: Phoenix.HTML.raw("&leftarrow;"), next: Phoenix.HTML.raw("&rightarrow;")
+
+  ### Advanced customization
+
+  Create a render module referencing `Scrivener.HTML.Render.Preset`, then use it
+  by setting `:render_module` option.
 
   """
   def pagination(%Page{} = page, options \\ []) do

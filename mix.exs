@@ -21,7 +21,7 @@ defmodule ScrivenerHtml.Mixfile do
       homepage_url: @github_url,
       docs: [
         main: "readme",
-        readme: "README.md"
+        extras: ["README.md"]
       ]
     ]
   end
