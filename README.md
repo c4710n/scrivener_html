@@ -22,7 +22,7 @@ Visit [HexDocs](https://hexdocs.pm/scrivener_html_semi).
 
 ## Differences from scrivener_html
 
-Unlike, [scrivener_html](https://github.com/mgwidmann/scrivener_html), **scrivener_html_semi** doesn't provide any support of popular CSS frameworks. But, it provides full control of HTML output.
+Unlike [scrivener_html](https://github.com/mgwidmann/scrivener_html), **scrivener_html_semi** doesn't provide any support of popular CSS frameworks. But, it provides full control of HTML output.
 
 ## Should I use this package?
 
@@ -35,6 +35,10 @@ If you want to customize HTML output manually, this package is for you.
 > `semi` is a meaningless suffix.
 
 As you know, there's a package called scrivener_html. In order to distinguish between these two packages, I name this package as **scrivener_html_semi**.
+
+## Why creating a new package rather than a PR?
+
+There are lots of breaking changes, it's hard to creating a PR.
 
 ## License
 
