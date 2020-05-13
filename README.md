@@ -9,7 +9,7 @@ Add `scrivener_html_semi` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:scrivener_html_semi, "~> 1.8"}
+    {:scrivener_html_semi, "~> 2.0"}
   ]
 end
 ```
