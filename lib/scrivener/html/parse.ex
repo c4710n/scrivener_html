@@ -7,7 +7,8 @@ defmodule Scrivener.HTML.Parse do
     previous: "<<",
     next: ">>",
     first: true,
-    last: true
+    last: true,
+    ellipsis: {:safe, "&hellip;"}
   ]
 
   @doc """
@@ -33,7 +34,7 @@ defmodule Scrivener.HTML.Parse do
 
   ## Examples
 
-      iex(31)> parse(%{total_pages: 10, page_number: 5})
+      iex> parse(%Scrivener.Page{total_pages: 10, page_number: 5}, [])
       [
         {"<<", 4},
         {1, 1},
@@ -49,7 +50,7 @@ defmodule Scrivener.HTML.Parse do
         {">>", 6}
       ]
 
-      iex> parse(%{total_pages: 15, page_number: 8}, first: "←", last: "→")
+      iex> parse(%Scrivener.Page{total_pages: 15, page_number: 8}, first: "←", last: "→")
       [
         {"<<", 7},
         {"←", 1},

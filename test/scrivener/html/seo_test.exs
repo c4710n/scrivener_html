@@ -2,6 +2,7 @@ defmodule Scrivener.HTML.SEOTest do
   use ExUnit.Case
   import Scrivener.HTML.SEO
   alias Scrivener.Page
+
   doctest Scrivener.HTML.SEO
 
   describe "#rel" do
@@ -34,11 +35,6 @@ defmodule Scrivener.HTML.SEOTest do
                   60,
                   "link",
                   [[32, "href", 61, 34, "?page=2", 34], [32, "rel", 61, 34, "next", 34]],
-                  62,
-                  [],
-                  60,
-                  47,
-                  "link",
                   62
                 ]}
     end
@@ -50,11 +46,6 @@ defmodule Scrivener.HTML.SEOTest do
                   60,
                   "link",
                   [[32, "href", 61, 34, "?page=9", 34], [32, "rel", 61, 34, "prev", 34]],
-                  62,
-                  [],
-                  60,
-                  47,
-                  "link",
                   62
                 ]}
     end
@@ -67,11 +58,6 @@ defmodule Scrivener.HTML.SEOTest do
                     60,
                     "link",
                     [[32, "href", 61, 34, "?page=4", 34], [32, "rel", 61, 34, "prev", 34]],
-                    62,
-                    [],
-                    60,
-                    47,
-                    "link",
                     62
                   ],
                   "\n",
@@ -79,11 +65,6 @@ defmodule Scrivener.HTML.SEOTest do
                     60,
                     "link",
                     [[32, "href", 61, 34, "?page=6", 34], [32, "rel", 61, 34, "next", 34]],
-                    62,
-                    [],
-                    60,
-                    47,
-                    "link",
                     62
                   ]
                 ]}
