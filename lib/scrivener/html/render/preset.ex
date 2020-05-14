@@ -10,50 +10,45 @@ defmodule Scrivener.HTML.Render.Preset do
     content_tag(:ul, block, attrs)
   end
 
-  def render_item({:ellipsis, true}, page, path, page_param, url_params) do
-    render_item(
-      {:ellipsis, raw("&hellip;")},
-      page,
-      path,
-      page_param,
-      url_params
-    )
-  end
-
   def render_item({:ellipsis, text}, _page, _path, _page_param, _url_params) do
     content_tag(:li) do
       content_tag(:span, safe(text))
     end
   end
 
-  def render_item({text, page_number}, page, path, page_param, url_params) do
-    params =
-      case page_number > 1 do
-        true -> [{page_param, page_number}]
-        false -> []
-      end ++ url_params
+  def render_item({atom, page_number, text}, page, path, page_param, url_params) do
+    class = Atom.to_string(atom)
+    to = get_url(path, page_param, page_number, url_params)
+    rel = SEO.rel(page, page_number)
 
     content_tag :li do
-      query = URI.encode_query(params)
-      to = "#{path}?#{query}"
-
-      if to do
-        if is_active_page?(page, page_number) do
-          content_tag(:a, safe(text))
-        else
-          link(safe(text),
-            to: to,
-            rel: SEO.rel(page, page_number)
-          )
-        end
-      else
-        content_tag(:a, safe(text))
-      end
+      link(safe(text), to: to, rel: rel, class: class)
     end
   end
 
-  defp is_active_page?(%{page_number: page_number}, page_number), do: true
-  defp is_active_page?(_page, _page_number), do: false
+  # active page
+  def render_item(
+        {text, current_page_number},
+        %{page_number: page_number},
+        _path,
+        _page_param,
+        _url_params
+      )
+      when current_page_number == page_number do
+    content_tag(:li) do
+      content_tag(:a, safe(text))
+    end
+  end
+
+  # other pages
+  def render_item({text, page_number}, page, path, page_param, url_params) do
+    to = get_url(path, page_param, page_number, url_params)
+    rel = SEO.rel(page, page_number)
+
+    content_tag :li do
+      link(safe(text), to: to, rel: rel)
+    end
+  end
 
   defp safe({:safe, _string} = whole_string) do
     whole_string
@@ -67,5 +62,11 @@ defmodule Scrivener.HTML.Render.Preset do
     string
     |> to_string()
     |> raw()
+  end
+
+  defp get_url(path, page_param, page_number, url_params) do
+    params = [{page_param, page_number}] ++ url_params
+    query = URI.encode_query(params)
+    "#{path}?#{query}"
   end
 end

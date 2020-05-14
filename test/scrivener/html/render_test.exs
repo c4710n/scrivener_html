@@ -16,7 +16,7 @@ defmodule Scrivener.HTML.RenderTest do
   @page %Page{total_pages: 15, page_number: 7}
 
   @parsed [
-    {"PREV", 6},
+    {:prev, 6, "PREV"},
     {1, 1},
     {:ellipsis, {:safe, "&hellip;"}},
     {6, 6},
@@ -24,7 +24,7 @@ defmodule Scrivener.HTML.RenderTest do
     {8, 8},
     {:ellipsis, {:safe, "&hellip;"}},
     {15, 15},
-    {"NEXT", 8}
+    {:next, 8, "NEXT"}
   ]
 
   test "render without :html_attrs option" do
@@ -33,15 +33,15 @@ defmodule Scrivener.HTML.RenderTest do
 
     expected = """
       <ul>
-        <li><a href="https://www.example.com?page=6" rel="prev">PREV</a></li>
-        <li><a href="https://www.example.com?" rel="canonical">1</a></li>
+        <li><a class="prev" href="https://www.example.com?page=6" rel="prev">PREV</a></li>
+        <li><a href="https://www.example.com?page=1" rel="canonical">1</a></li>
         <li><span>&hellip;</span></li>
         <li><a href="https://www.example.com?page=6" rel="prev">6</a></li>
         <li><a>7</a></li>
         <li><a href="https://www.example.com?page=8" rel="next">8</a></li>
         <li><span>&hellip;</span></li>
         <li><a href="https://www.example.com?page=15" rel="canonical">15</a></li>
-        <li><a href="https://www.example.com?page=8" rel="next">NEXT</a></li>
+        <li><a class="next" href="https://www.example.com?page=8" rel="next">NEXT</a></li>
       </ul>
     """
 
@@ -55,15 +55,15 @@ defmodule Scrivener.HTML.RenderTest do
 
     expected = """
       <ul class="pagination">
-        <li><a href="https://www.example.com?page=6" rel="prev">PREV</a></li>
-        <li><a href="https://www.example.com?" rel="canonical">1</a></li>
+        <li><a class="prev" href="https://www.example.com?page=6" rel="prev">PREV</a></li>
+        <li><a href="https://www.example.com?page=1" rel="canonical">1</a></li>
         <li><span>&hellip;</span></li>
         <li><a href="https://www.example.com?page=6" rel="prev">6</a></li>
         <li><a>7</a></li>
         <li><a href="https://www.example.com?page=8" rel="next">8</a></li>
         <li><span>&hellip;</span></li>
         <li><a href="https://www.example.com?page=15" rel="canonical">15</a></li>
-        <li><a href="https://www.example.com?page=8" rel="next">NEXT</a></li>
+        <li><a class="next" href="https://www.example.com?page=8" rel="next">NEXT</a></li>
       </ul>
     """
 

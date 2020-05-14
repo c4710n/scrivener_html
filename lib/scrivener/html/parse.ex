@@ -39,7 +39,7 @@ defmodule Scrivener.HTML.Parse do
 
       iex> parse(%Scrivener.Page{total_pages: 10, page_number: 5}, [])
       [
-        {"PREV", 4},
+        {:prev, 4, "PREV"},
         {1, 1},
         {:ellipsis, {:safe, "&hellip;"}},
         {4, 4},
@@ -47,7 +47,7 @@ defmodule Scrivener.HTML.Parse do
         {6, 6},
         {:ellipsis, {:safe, "&hellip;"}},
         {10, 10},
-        {"NEXT", 6}
+        {:next, 6, "NEXT"}
       ]
 
   """
@@ -74,10 +74,10 @@ defmodule Scrivener.HTML.Parse do
     |> add_next(opt_next, page_number, total_pages)
     |> Enum.map(fn
       :prev ->
-        {opt_prev, page_number - 1}
+        {:prev, page_number - 1, opt_prev}
 
       :next ->
-        {opt_next, page_number + 1}
+        {:next, page_number + 1, opt_next}
 
       :ellipsis ->
         {:ellipsis, opt_ellipsis}

@@ -22,8 +22,8 @@ defmodule Scrivener.HTML.ParseTest do
   def pages_with_last(last, range),
     do: pages(range) ++ [{:ellipsis, Phoenix.HTML.raw("&hellip;")}, {last, last}]
 
-  def pages_with_next(range, next), do: pages(range) ++ [{">>", next}]
-  def pages_with_prev(prev, range), do: [{"<<", prev}] ++ pages(range)
+  def pages_with_prev(prev, range), do: [{:prev, prev, "<<"}] ++ pages(range)
+  def pages_with_next(range, next), do: pages(range) ++ [{:next, next, ">>"}]
 
   describe "disable all options" do
     test "left out + right in" do
@@ -151,7 +151,7 @@ defmodule Scrivener.HTML.ParseTest do
     end
 
     test "includes a prev before the first" do
-      assert [{"<<", 49}, {1, 1}, {:ellipsis, raw("&hellip;")}] ++ pages(49..52) ==
+      assert [{:prev, 49, "<<"}, {1, 1}, {:ellipsis, raw("&hellip;")}] ++ pages(49..52) ==
                parse(
                  %Page{total_pages: 100, page_number: 50},
                  Keyword.merge(@options, prev: "<<", first?: true)
