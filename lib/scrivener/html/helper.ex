@@ -24,4 +24,10 @@ defmodule Scrivener.HTML.Helper do
     |> Keyword.keys()
     |> Enum.map(&fetch_option(options, defaults, &1))
   end
+
+  def clamp(value, min, max) do
+    value
+    |> max(min)
+    |> min(max)
+  end
 end

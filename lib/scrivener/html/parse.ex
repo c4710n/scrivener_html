@@ -1,13 +1,14 @@
 defmodule Scrivener.HTML.Parse do
-  import Scrivener.HTML.Helper, only: [fetch_options: 2]
+  import Scrivener.HTML.Helper, only: [fetch_options: 2, clamp: 3]
+  require Integer
   alias Scrivener.Page
 
   @defaults [
-    distance: 5,
-    previous: "<<",
-    next: ">>",
-    first: true,
-    last: true,
+    range: 5,
+    prev: "PREV",
+    next: "NEXT",
+    first?: true,
+    last?: true,
     ellipsis: {:safe, "&hellip;"}
   ]
 
@@ -21,11 +22,10 @@ defmodule Scrivener.HTML.Parse do
   #{inspect(@defaults)}
   ```
 
-  + `distance` declares how many pages are shown. It is a positive integer.
-  + `previous` and `next` declares text for previous and next buttons. Generally,
+  + `range` declares how many pages are shown. It is a positive integer.
+  + `prev` and `next` declares text for previous and next buttons. Generally,
   they are string. Falsy values will remove them from output.
-  + `first` and `last` declares whether show first or last page. Genrally, they are
-  boolean values, but they can be strings, too.
+  + `first?` and `last?` declares whether show first or last page.
 
   ## Return value
   Return value is a list of tuples. The tuple is in a `{text, page_number}` format
@@ -76,142 +76,110 @@ defmodule Scrivener.HTML.Parse do
     %{page_number: page_number, total_pages: total_pages} = page
 
     options = fetch_options(options, @defaults)
-    opt_distance = options[:distance]
-    opt_previous = options[:previous]
+    opt_range = options[:range]
+    opt_prev = options[:prev]
     opt_next = options[:next]
-    opt_first = options[:first]
-    opt_last = options[:last]
+    opt_first = options[:first?]
+    opt_last = options[:last?]
     opt_ellipsis = options[:ellipsis]
 
+    {left_distance, right_distance} = get_distance(opt_range)
+
+    page_number = clamp(page_number, 1, total_pages)
+
     []
-    |> add_first(page_number, opt_distance, opt_first)
-    |> add_first_ellipsis(page_number, total_pages, opt_distance, opt_first)
-    |> add_previous(page_number)
-    |> page_number_list(page_number, total_pages, opt_distance)
-    |> add_last_ellipsis(page_number, total_pages, opt_distance, opt_last)
-    |> add_last(page_number, total_pages, opt_distance, opt_last)
+    |> get_pages(page_number, total_pages, opt_range, left_distance, right_distance)
+    |> add_first(opt_first, opt_ellipsis)
+    |> add_last(opt_last, opt_ellipsis, total_pages)
+    |> add_prev(page_number)
     |> add_next(page_number, total_pages)
     |> Enum.map(fn
-      :previous ->
-        if opt_previous, do: {opt_previous, page_number - 1}
+      :prev ->
+        {opt_prev, page_number - 1}
 
       :next ->
-        if opt_next, do: {opt_next, page_number + 1}
+        {opt_next, page_number + 1}
 
-      :first_ellipsis ->
-        if opt_ellipsis && opt_first, do: {:ellipsis, opt_ellipsis}
-
-      :last_ellipsis ->
-        if opt_ellipsis && opt_last, do: {:ellipsis, opt_ellipsis}
+      :ellipsis ->
+        {:ellipsis, opt_ellipsis}
 
       :first ->
-        if opt_first, do: {opt_first, 1}
+        {1, 1}
 
       :last ->
-        if opt_last, do: {opt_last, total_pages}
+        {total_pages, total_pages}
 
       num when is_number(num) ->
         {num, num}
     end)
-    |> Enum.filter(& &1)
   end
 
-  # Computing page number ranges
-  defp page_number_list(list, page_number, total_pages, distance)
-       when is_integer(distance) and distance >= 1 do
-    list ++
-      Enum.to_list(
-        beginning_distance(page_number, total_pages, distance)..end_distance(
-          page_number,
-          total_pages,
-          distance
-        )
-      )
+  # computer page number ranges
+  defp get_pages(list, page_number, total_pages, range, left_distance, right_distance) do
+    page_range = get_page_range(page_number, total_pages, range, left_distance, right_distance)
+    list ++ Enum.to_list(page_range)
   end
 
-  defp page_number_list(_list, _page_number, _total_pages, _distance) do
-    raise "Scrivener.HTML: Distance cannot be less than one."
+  # left out + right out / left out + right in
+  def get_page_range(page_number, total_pages, range, left_distance, right_distance)
+      when page_number - left_distance < 1 do
+    1..min(range, total_pages)
   end
 
-  # Beginning distance computation
-  # For low page numbers
-  defp beginning_distance(page_number, _total_pages, distance)
-       when page_number - distance < 1 do
-    page_number - (distance + (page_number - distance - 1))
+  # left in + right in
+  def get_page_range(page_number, total_pages, range, left_distance, right_distance)
+      when page_number - left_distance >= 1 and
+             page_number + right_distance <= total_pages do
+    (page_number - left_distance)..(page_number + right_distance)
   end
 
-  # For medium to high end page numbers
-  defp beginning_distance(page_number, total_pages, distance)
-       when page_number <= total_pages do
-    page_number - distance
+  # left in + right out / left out + right out
+  def get_page_range(page_number, total_pages, range, left_distance, right_distance)
+      when page_number + right_distance > total_pages do
+    max(total_pages - range + 1, 1)..total_pages
   end
 
-  # For page numbers over the total number of pages
-  # (prevent DOS attack generating too many pages)
-  defp beginning_distance(page_number, total_pages, distance)
-       when page_number > total_pages do
-    total_pages - distance
+  defp add_first(list, first, ellipsis) do
+    [min_page_number | rest] = list
+
+    cond do
+      first && min_page_number > 1 ->
+        [:first, :ellipsis] ++ rest
+
+      min_page_number > 1 && ellipsis ->
+        [:ellipsis] ++ list
+
+      true ->
+        list
+    end
   end
 
-  # End distance computation
-  # For high end page numbers (prevent DOS attack generating too many pages)
-  defp end_distance(page_number, total_pages, distance)
-       when page_number + distance >= total_pages and total_pages != 0 do
-    total_pages
+  def add_last(list, last, ellipsis, total_pages) do
+    {max_page_number, rest} = List.pop_at(list, -1)
+
+    cond do
+      last && max_page_number < total_pages ->
+        rest ++ [:ellipsis, :last]
+
+      ellipsis && max_page_number < total_pages ->
+        list ++ [:ellipsis]
+
+      true ->
+        list
+    end
   end
 
-  # For when there is no pages, cannot trust page number because it is supplied
-  # by user potentially (prevent DOS attack)
-  defp end_distance(_page_number, 0, _distance) do
-    1
+  defp add_prev(list, page_number)
+       when page_number > 1 do
+    [:prev | list]
   end
 
-  # For low to mid range page numbers
-  # (guard here to ensure crash if something goes wrong)
-  defp end_distance(page_number, total_pages, distance)
-       when page_number + distance < total_pages do
-    page_number + distance
-  end
-
-  # Adding next/prev/first/last links
-  defp add_previous(list, page_number) when page_number != 1 do
-    [:previous | list]
-  end
-
-  defp add_previous(list, _page_number) do
-    list
-  end
-
-  defp add_first(list, page_number, distance, true)
-       when page_number - distance > 1 do
-    [1 | list]
-  end
-
-  defp add_first(list, page_number, distance, first)
-       when page_number - distance > 1 and first != false do
-    [:first | list]
-  end
-
-  defp add_first(list, _page_number, _distance, _included) do
-    list
-  end
-
-  defp add_last(list, page_number, total_pages, distance, true)
-       when page_number + distance < total_pages do
-    list ++ [total_pages]
-  end
-
-  defp add_last(list, page_number, total_pages, distance, last)
-       when page_number + distance < total_pages and last != false do
-    list ++ [:last]
-  end
-
-  defp add_last(list, _page_number, _total_pages, _distance, _included) do
+  defp add_prev(list, _page_number) do
     list
   end
 
   defp add_next(list, page_number, total_pages)
-       when page_number != total_pages and page_number < total_pages do
+       when page_number < total_pages do
     list ++ [:next]
   end
 
@@ -219,30 +187,16 @@ defmodule Scrivener.HTML.Parse do
     list
   end
 
-  defp add_first_ellipsis(list, page_number, total_pages, distance, true) do
-    add_first_ellipsis(list, page_number, total_pages, distance + 1, nil)
+  def get_distance(range) when Integer.is_odd(range) do
+    left_distance = div(range, 2)
+    right_distance = left_distance
+    {left_distance, right_distance}
   end
 
-  defp add_first_ellipsis(list, page_number, _total_pages, distance, _first)
-       when page_number - distance > 1 and page_number > 1 do
-    list ++ [:first_ellipsis]
-  end
-
-  defp add_first_ellipsis(list, _page_number, _total_pages, _distance, _first) do
-    list
-  end
-
-  defp add_last_ellipsis(list, page_number, total_pages, distance, true) do
-    add_last_ellipsis(list, page_number, total_pages, distance + 1, nil)
-  end
-
-  defp add_last_ellipsis(list, page_number, total_pages, distance, _)
-       when page_number + distance < total_pages and page_number != total_pages do
-    list ++ [:last_ellipsis]
-  end
-
-  defp add_last_ellipsis(list, _page_number, _total_pages, _distance, _last) do
-    list
+  def get_distance(range) when Integer.is_even(range) do
+    right_distance = div(range, 2)
+    left_distance = right_distance - 1
+    {left_distance, right_distance}
   end
 
   @doc """
