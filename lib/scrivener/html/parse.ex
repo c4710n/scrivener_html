@@ -31,9 +31,7 @@ defmodule Scrivener.HTML.Parse do
   + `:ellipsis` declares the text shown as ellipsis.
 
   ## Return value
-  Return value is a list of tuples. The tuple is in a `{text, page_number}` format
-  where `text` is intended to be the text of the link and `page_number` is the
-  page number it should go to.
+  Return value is a list of tuples.
 
   ## Examples
 
