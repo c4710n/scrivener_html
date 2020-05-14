@@ -1,7 +1,7 @@
 defmodule Scrivener.HTML.MixProject do
   use Mix.Project
 
-  @version "3.0.1"
+  @version "3.1.0"
   @github_url "https://github.com/c4710n/scrivener_html_semi"
 
   def project do
