@@ -22,10 +22,13 @@ defmodule Scrivener.HTML.Parse do
   #{inspect(@defaults)}
   ```
 
-  + `range` declares how many pages are shown. It is a positive integer.
-  + `prev` and `next` declares text for previous and next buttons. Generally,
+  + `:range` declares how many pages are shown. It should be an integer greater
+  than or equal to 3.
+  + `:prev` and `:next` declares text for previous and next buttons. Generally,
   they are string. Falsy values will remove them from output.
-  + `first?` and `last?` declares whether show first or last page.
+  + `:first?` and `last?` declares whether to show first / last page and
+  corresponding ellipsis.
+  + `:ellipsis` declares the text shown as ellipsis.
 
   ## Return value
   Return value is a list of tuples. The tuple is in a `{text, page_number}` format
@@ -36,39 +39,15 @@ defmodule Scrivener.HTML.Parse do
 
       iex> parse(%Scrivener.Page{total_pages: 10, page_number: 5}, [])
       [
-        {"<<", 4},
+        {"PREV", 4},
         {1, 1},
-        {2, 2},
-        {3, 3},
+        {:ellipsis, {:safe, "&hellip;"}},
         {4, 4},
         {5, 5},
         {6, 6},
-        {7, 7},
-        {8, 8},
-        {9, 9},
-        {10, 10},
-        {">>", 6}
-      ]
-
-      iex> parse(%Scrivener.Page{total_pages: 15, page_number: 8}, first: "←", last: "→")
-      [
-        {"<<", 7},
-        {"←", 1},
         {:ellipsis, {:safe, "&hellip;"}},
-        {3, 3},
-        {4, 4},
-        {5, 5},
-        {6, 6},
-        {7, 7},
-        {8, 8},
-        {9, 9},
         {10, 10},
-        {11, 11},
-        {12, 12},
-        {13, 13},
-        {:ellipsis, {:safe, "&hellip;"}},
-        {"→", 15},
-        {">>", 9}
+        {"NEXT", 6}
       ]
 
   """
@@ -76,7 +55,7 @@ defmodule Scrivener.HTML.Parse do
     %{page_number: page_number, total_pages: total_pages} = page
 
     options = fetch_options(options, @defaults)
-    opt_range = options[:range]
+    opt_range = max(options[:range], 3)
     opt_prev = options[:prev]
     opt_next = options[:next]
     opt_first = options[:first?]
@@ -89,10 +68,10 @@ defmodule Scrivener.HTML.Parse do
 
     []
     |> get_pages(page_number, total_pages, opt_range, left_distance, right_distance)
-    |> add_first(opt_first, opt_ellipsis)
-    |> add_last(opt_last, opt_ellipsis, total_pages)
-    |> add_prev(page_number)
-    |> add_next(page_number, total_pages)
+    |> add_first(opt_first)
+    |> add_last(opt_last, total_pages)
+    |> add_prev(opt_prev, page_number)
+    |> add_next(opt_next, page_number, total_pages)
     |> Enum.map(fn
       :prev ->
         {opt_prev, page_number - 1}
@@ -121,70 +100,62 @@ defmodule Scrivener.HTML.Parse do
   end
 
   # left out + right out / left out + right in
-  def get_page_range(page_number, total_pages, range, left_distance, right_distance)
+  def get_page_range(page_number, total_pages, range, left_distance, _right_distance)
       when page_number - left_distance < 1 do
     1..min(range, total_pages)
   end
 
   # left in + right in
-  def get_page_range(page_number, total_pages, range, left_distance, right_distance)
+  def get_page_range(page_number, total_pages, _range, left_distance, right_distance)
       when page_number - left_distance >= 1 and
              page_number + right_distance <= total_pages do
     (page_number - left_distance)..(page_number + right_distance)
   end
 
   # left in + right out / left out + right out
-  def get_page_range(page_number, total_pages, range, left_distance, right_distance)
+  def get_page_range(page_number, total_pages, range, _left_distance, right_distance)
       when page_number + right_distance > total_pages do
     max(total_pages - range + 1, 1)..total_pages
   end
 
-  defp add_first(list, first, ellipsis) do
+  defp add_first(list, first) do
     [min_page_number | rest] = list
 
     cond do
       first && min_page_number > 1 ->
         [:first, :ellipsis] ++ rest
 
-      min_page_number > 1 && ellipsis ->
-        [:ellipsis] ++ list
-
       true ->
         list
     end
   end
 
-  def add_last(list, last, ellipsis, total_pages) do
+  def add_last(list, last, total_pages) do
     {max_page_number, rest} = List.pop_at(list, -1)
 
     cond do
       last && max_page_number < total_pages ->
         rest ++ [:ellipsis, :last]
 
-      ellipsis && max_page_number < total_pages ->
-        list ++ [:ellipsis]
-
       true ->
         list
     end
   end
 
-  defp add_prev(list, page_number)
-       when page_number > 1 do
-    [:prev | list]
+  defp add_prev(list, opt_prev, page_number) do
+    if opt_prev && page_number > 1 do
+      [:prev | list]
+    else
+      list
+    end
   end
 
-  defp add_prev(list, _page_number) do
-    list
-  end
-
-  defp add_next(list, page_number, total_pages)
-       when page_number < total_pages do
-    list ++ [:next]
-  end
-
-  defp add_next(list, _page_number, _total_pages) do
-    list
+  defp add_next(list, opt_next, page_number, total_pages) do
+    if opt_next && page_number < total_pages do
+      list ++ [:next]
+    else
+      list
+    end
   end
 
   def get_distance(range) when Integer.is_odd(range) do

@@ -1,11 +1,12 @@
 defmodule Scrivener.HTML.ParseTest do
   use ExUnit.Case
   import Scrivener.HTML.Parse, only: [parse: 2]
+  import Phoenix.HTML, only: [raw: 1]
   alias Scrivener.Page
 
   doctest Scrivener.HTML.Parse
 
-  @options [next: false, previous: false, first: false, last: false]
+  @options [next: false, prev: false, first?: false, last?: false]
 
   def pages(range), do: Enum.to_list(range) |> Enum.map(&{&1, &1})
 
@@ -22,277 +23,164 @@ defmodule Scrivener.HTML.ParseTest do
     do: pages(range) ++ [{:ellipsis, Phoenix.HTML.raw("&hellip;")}, {last, last}]
 
   def pages_with_next(range, next), do: pages(range) ++ [{">>", next}]
-  def pages_with_previous(previous, range), do: [{"<<", previous}] ++ pages(range)
+  def pages_with_prev(prev, range), do: [{"<<", prev}] ++ pages(range)
 
   describe "disable all options" do
-    test "in the middle" do
-      assert pages(45..55) ==
+    test "left out + right in" do
+      assert pages(1..5) ==
+               parse(%Page{total_pages: 100, page_number: -1}, @options)
+    end
+
+    test "left in + right in" do
+      assert pages(48..52) ==
                parse(%Page{total_pages: 100, page_number: 50}, @options)
     end
 
-    test ":distance from the first" do
-      assert pages(1..10) ==
-               parse(%Page{total_pages: 20, page_number: 5}, @options)
+    test "left in + right out" do
+      assert pages(96..100) ==
+               parse(%Page{total_pages: 100, page_number: 99}, @options)
     end
 
-    test "2 away from the first" do
-      assert pages(1..8) ==
-               parse(%Page{total_pages: 10, page_number: 3}, @options)
+    test "left out + right out" do
+      assert pages(96..100) ==
+               parse(%Page{total_pages: 100, page_number: 101}, @options)
     end
 
-    test "1 away from the first" do
-      assert pages(1..7) ==
-               parse(%Page{total_pages: 10, page_number: 2}, @options)
-    end
-
-    test "at the first" do
-      assert pages(1..6) ==
-               parse(%Page{total_pages: 10, page_number: 1}, @options)
-    end
-
-    test ":distance from the last" do
-      assert pages(10..20) ==
-               parse(%Page{total_pages: 20, page_number: 15}, @options)
-    end
-
-    test "2 away from the last" do
-      assert pages(3..10) ==
-               parse(%Page{total_pages: 10, page_number: 8}, @options)
-    end
-
-    test "1 away from the last" do
-      assert pages(4..10) ==
-               parse(%Page{total_pages: 10, page_number: 9}, @options)
-    end
-
-    test "at the last" do
-      assert pages(5..10) ==
-               parse(%Page{total_pages: 10, page_number: 10}, @options)
-    end
-
-    test "page value larger than total pages" do
-      assert pages(5..10) ==
-               parse(%Page{total_pages: 10, page_number: 100}, @options)
+    test "pages less than range" do
+      assert pages(1..3) ==
+               parse(%Page{total_pages: 3, page_number: 1}, @options)
     end
   end
 
-  describe "option - :distance" do
-    test "can change the distance" do
-      assert pages(1..3) ==
+  describe "option - :range" do
+    test "change the range" do
+      assert pages(49..51) ==
                parse(
-                 %Page{total_pages: 3, page_number: 2},
-                 Keyword.merge(@options, distance: 1)
+                 %Page{total_pages: 100, page_number: 50},
+                 Keyword.merge(@options, range: 3)
+               )
+    end
+
+    test "fallback to range 3" do
+      assert pages(49..51) ==
+               parse(
+                 %Page{total_pages: 100, page_number: 50},
+                 Keyword.merge(@options, range: 1)
                )
     end
   end
 
   describe "option - :first" do
-    test "includes the first" do
-      assert pages_with_first(1, 5..15) ==
+    test "add first" do
+      assert pages_with_first(1, 49..52) ==
                parse(
-                 %Page{total_pages: 20, page_number: 10},
-                 Keyword.merge(@options, first: true)
+                 %Page{total_pages: 100, page_number: 50},
+                 Keyword.merge(@options, first?: true)
                )
     end
 
-    test "does not the include the first when it is already included" do
-      assert pages(1..10) ==
+    test "already include first" do
+      assert pages(1..5) ==
                parse(
-                 %Page{total_pages: 10, page_number: 5},
-                 Keyword.merge(@options, first: true)
-               )
-    end
-
-    test "custom" do
-      assert pages_with_first({"←", 1}, 5..15) ==
-               parse(
-                 %Page{total_pages: 20, page_number: 10},
-                 Keyword.merge(@options, first: "←")
-               )
-    end
-
-    test "can disable first" do
-      assert pages(5..15) ==
-               parse(
-                 %Page{total_pages: 20, page_number: 10},
-                 Keyword.merge(@options, first: false)
+                 %Page{total_pages: 100, page_number: 3},
+                 Keyword.merge(@options, first?: true)
                )
     end
   end
 
   describe "option - :last" do
-    test "includes the last" do
-      assert pages_with_last(20, 5..15) ==
+    test "add last" do
+      assert pages_with_last(100, 48..51) ==
                parse(
-                 %Page{total_pages: 20, page_number: 10},
-                 Keyword.merge(@options, last: true)
+                 %Page{total_pages: 100, page_number: 50},
+                 Keyword.merge(@options, last?: true)
                )
     end
 
-    test "does not the include the last when it is already included" do
-      assert pages(1..10) ==
+    test "already include last" do
+      assert pages(96..100) ==
                parse(
-                 %Page{total_pages: 10, page_number: 5},
-                 Keyword.merge(@options, last: true)
+                 %Page{total_pages: 100, page_number: 99},
+                 Keyword.merge(@options, last?: true)
+               )
+    end
+  end
+
+  describe "option - :ellipsis" do
+    test "custom ellipsis" do
+      assert [
+        {1, 1},
+        {:ellipsis, "..."},
+        {49, 49},
+        {50, 50},
+        {51, 51},
+        {:ellipsis, "..."},
+        {100, 100}
+      ]
+
+      parse(
+        %Page{total_pages: 100, page_number: 50},
+        Keyword.merge(@options, first?: true, last?: true, ellipsis: "...")
+      )
+    end
+  end
+
+  describe "option - :prev" do
+    test "includes a prev" do
+      assert pages_with_prev(49, 48..52) ==
+               parse(
+                 %Page{total_pages: 100, page_number: 50},
+                 Keyword.merge(@options, prev: "<<")
                )
     end
 
-    test "custom" do
-      assert pages_with_last({"→", 20}, 5..15) ==
+    test "does not include prev when page_number is 1" do
+      assert pages(1..5) ==
                parse(
-                 %Page{total_pages: 20, page_number: 10},
-                 Keyword.merge(@options, last: "→")
+                 %Page{total_pages: 100, page_number: 1},
+                 Keyword.merge(@options, prev: "<<")
                )
     end
 
-    test "can disable last" do
-      assert pages(5..15) ==
+    test "disable prev" do
+      assert pages(48..52) ==
                parse(
-                 %Page{total_pages: 20, page_number: 10},
-                 Keyword.merge(@options, last: false)
+                 %Page{total_pages: 100, page_number: 50},
+                 Keyword.merge(@options, prev: false)
+               )
+    end
+
+    test "includes a prev before the first" do
+      assert [{"<<", 49}, {1, 1}, {:ellipsis, raw("&hellip;")}] ++ pages(49..52) ==
+               parse(
+                 %Page{total_pages: 100, page_number: 50},
+                 Keyword.merge(@options, prev: "<<", first?: true)
                )
     end
   end
 
   describe "option - :next" do
     test "includes a next" do
-      assert pages_with_next(45..55, 51) ==
+      assert pages_with_next(48..52, 51) ==
                parse(
                  %Page{total_pages: 100, page_number: 50},
                  Keyword.merge(@options, next: ">>")
                )
     end
 
-    test "does not include next when equal to the total" do
-      assert pages(5..10) ==
+    test "does not include prev when page_number equals to total_pages" do
+      assert pages(96..100) ==
                parse(
-                 %Page{total_pages: 10, page_number: 10},
+                 %Page{total_pages: 100, page_number: 100},
                  Keyword.merge(@options, next: ">>")
                )
     end
 
-    test "can disable next" do
-      assert pages(45..55) ==
+    test "disable next" do
+      assert pages(48..52) ==
                parse(
                  %Page{total_pages: 100, page_number: 50},
                  Keyword.merge(@options, next: false)
-               )
-    end
-  end
-
-  describe "option - :previous" do
-    test "includes a previous" do
-      assert pages_with_previous(49, 45..55) ==
-               parse(
-                 %Page{total_pages: 100, page_number: 50},
-                 Keyword.merge(@options, previous: "<<")
-               )
-    end
-
-    test "includes a previous before the first" do
-      assert [{"<<", 49}, {1, 1}, {:ellipsis, Phoenix.HTML.raw("&hellip;")}] ++ pages(45..55) ==
-               parse(
-                 %Page{total_pages: 100, page_number: 50},
-                 Keyword.merge(@options, previous: "<<", first: true)
-               )
-    end
-
-    test "does not include previous when equal to page 1" do
-      assert pages(1..6) ==
-               parse(
-                 %Page{total_pages: 10, page_number: 1},
-                 Keyword.merge(@options, previous: "<<")
-               )
-    end
-
-    test "can disable previous" do
-      assert pages(45..55) ==
-               parse(
-                 %Page{total_pages: 100, page_number: 50},
-                 Keyword.merge(@options, previous: false)
-               )
-    end
-  end
-
-  describe "option - :ellipsis" do
-    test "includes ellipsis after first" do
-      assert [{1, 1}, {:ellipsis, "&hellip;"}] ++ pages(45..55) ==
-               parse(
-                 %Page{total_pages: 100, page_number: 50},
-                 Keyword.merge(@options, previous: false, first: true, ellipsis: "&hellip;")
-               )
-    end
-
-    test "includes ellipsis before last" do
-      assert pages(5..15) ++ [{:ellipsis, "&hellip;"}, {20, 20}] ==
-               parse(
-                 %Page{total_pages: 20, page_number: 10},
-                 Keyword.merge(@options, last: true, ellipsis: "&hellip;")
-               )
-    end
-
-    test "does not include ellipsis on first page" do
-      assert pages(1..6) ==
-               parse(
-                 %Page{total_pages: 8, page_number: 1},
-                 Keyword.merge(@options, first: true, ellipsis: "&hellip;")
-               )
-    end
-
-    test "uses ellipsis only beyond <distance> of first page" do
-      assert pages(1..11) ==
-               parse(
-                 %Page{total_pages: 20, page_number: 6},
-                 Keyword.merge(@options, first: true, ellipsis: "&hellip;")
-               )
-
-      assert [{1, 1}] ++ pages(2..12) ==
-               parse(
-                 %Page{total_pages: 20, page_number: 7},
-                 Keyword.merge(@options, first: true, ellipsis: "&hellip;")
-               )
-    end
-
-    test "when first/last are true, uses ellipsis only when (<distance> + 1) is greater than the total pages" do
-      options = [first: true, last: true, distance: 1]
-
-      assert pages(1..3) ==
-               parse(
-                 %Page{total_pages: 3, page_number: 1},
-                 Keyword.merge(@options, options)
-               )
-
-      assert pages(1..3) ==
-               parse(
-                 %Page{total_pages: 3, page_number: 3},
-                 Keyword.merge(@options, options)
-               )
-    end
-
-    test "does not include ellipsis on last page" do
-      assert pages(15..20) ==
-               parse(
-                 %Page{total_pages: 20, page_number: 20},
-                 Keyword.merge(@options,
-                   last: true,
-                   ellipsis: "&hellip;"
-                 )
-               )
-    end
-
-    test "uses ellipsis only beyond <distance> of last page" do
-      options = [last: true, ellipsis: "&hellip;"]
-
-      assert pages(10..20) ==
-               parse(
-                 %Page{total_pages: 20, page_number: 15},
-                 Keyword.merge(@options, options)
-               )
-
-      assert pages(9..19) ++ [{20, 20}] ==
-               parse(
-                 %Page{total_pages: 20, page_number: 14},
-                 Keyword.merge(@options, options)
                )
     end
   end

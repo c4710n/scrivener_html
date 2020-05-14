@@ -21,7 +21,7 @@ defmodule Scrivener.HTML.Render.Preset do
   end
 
   def render_item({:ellipsis, text}, _page, _path, _page_param, _url_params) do
-    content_tag(:li, class: "page-item") do
+    content_tag(:li) do
       content_tag(:span, safe(text))
     end
   end
@@ -33,22 +33,21 @@ defmodule Scrivener.HTML.Render.Preset do
         false -> []
       end ++ url_params
 
-    content_tag :li, class: "page-item" do
+    content_tag :li do
       query = URI.encode_query(params)
       to = "#{path}?#{query}"
 
       if to do
         if is_active_page?(page, page_number) do
-          content_tag(:a, safe(text), class: "page-link")
+          content_tag(:a, safe(text))
         else
           link(safe(text),
             to: to,
-            rel: SEO.rel(page, page_number),
-            class: "page-link"
+            rel: SEO.rel(page, page_number)
           )
         end
       else
-        content_tag(:a, safe(text), class: "page-link")
+        content_tag(:a, safe(text))
       end
     end
   end
