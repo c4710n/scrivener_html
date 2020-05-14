@@ -3,7 +3,11 @@ defmodule Scrivener.HTML.Render.Preset do
   alias Scrivener.HTML.SEO
 
   def render_container(do: block) do
-    content_tag(:ul, block, class: "pagination")
+    content_tag(:ul, block, [])
+  end
+
+  def render_container(attrs, do: block) when is_list(attrs) do
+    content_tag(:ul, block, attrs)
   end
 
   def render_item({:ellipsis, true}, page, path, page_param, url_params) do

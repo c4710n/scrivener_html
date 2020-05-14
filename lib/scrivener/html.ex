@@ -77,6 +77,10 @@ defmodule Scrivener.HTML do
 
   ## Custom HTML output
 
+  ### Custom HTML attrs of container
+
+      iex> pagination(%Scrivener.Page{total_pages: 10, page_number: 5}, html_attrs: [class: "pagination"])
+
   ### Custom previous and next buttons
 
       iex> pagination(%Scrivener.Page{total_pages: 10, page_number: 5}, previous: Phoenix.HTML.raw("&leftarrow;"), next: Phoenix.HTML.raw("&rightarrow;")

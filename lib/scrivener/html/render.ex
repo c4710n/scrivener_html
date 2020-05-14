@@ -5,6 +5,7 @@ defmodule Scrivener.HTML.Render do
 
   @defaults [
     render_module: Scrivener.HTML.Render.Preset,
+    html_attrs: [],
     hide_single: false,
     path: "",
     page_param: :page
@@ -22,6 +23,7 @@ defmodule Scrivener.HTML.Render do
       raw(nil)
     else
       render_module = options[:render_module]
+      html_attrs = options[:html_attrs]
       path = options[:path]
       page_param = options[:page_param]
       url_params = Keyword.drop(options, Keyword.keys(@defaults))
@@ -37,7 +39,7 @@ defmodule Scrivener.HTML.Render do
           ])
         end)
 
-      apply(render_module, :render_container, [[do: items]])
+      apply(render_module, :render_container, [html_attrs, [do: items]])
     end
   end
 
