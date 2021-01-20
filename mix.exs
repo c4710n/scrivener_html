@@ -35,7 +35,7 @@ defmodule Scrivener.HTML.MixProject do
     [
       {:scrivener, "~> 1.2 or ~> 2.0"},
       {:phoenix_html, ">= 0.0.0"},
-      {:ex_doc, "~> 0.21", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.23", only: :dev, runtime: false}
     ]
   end
 
