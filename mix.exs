@@ -27,7 +27,7 @@ defmodule Scrivener.HTML.MixProject do
 
   def application do
     [
-      applications: [:logger]
+      extra_applications: [:logger]
     ]
   end
 
