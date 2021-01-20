@@ -1,7 +1,7 @@
 defmodule Scrivener.HTML.MixProject do
   use Mix.Project
 
-  @version "3.1.0"
+  @version "3.1.1"
   @github_url "https://github.com/c4710n/scrivener_html_semi"
 
   def project do
@@ -9,7 +9,7 @@ defmodule Scrivener.HTML.MixProject do
       app: :scrivener_html_semi,
       description: "HTML helpers for Scrivener.",
       version: @version,
-      elixir: "~> 1.10",
+      elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
